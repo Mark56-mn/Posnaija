@@ -31,6 +31,10 @@ export default function RegisterPage() {
       password: formData.password,
       options: {
         emailRedirectTo: window.location.origin + '/auth/callback',
+        // Disable email confirmation so users can login immediately
+        data: {
+          email_confirmed: true
+        }
       }
     });
 
@@ -41,23 +45,43 @@ export default function RegisterPage() {
     }
 
     if (data.user) {
-      // Create profile
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        email: formData.email,
-        business_name: formData.businessName,
-        role: 'admin',
-        onboarding_completed: false,
-        plan: 'free'
-      });
-      // Trial plan
-      await supabase.from('subscriptions').insert({
-        admin_id: data.user.id,
-        plan: 'free',
-        status: 'active',
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-      });
-      navigate('/auth/sign-up-success');
+      try {
+        // Create profile
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: formData.email,
+          business_name: formData.businessName,
+          role: 'admin',
+          onboarding_completed: false,
+          plan: 'free'
+        });
+
+        // Trial plan
+        await supabase.from('subscriptions').insert({
+          admin_id: data.user.id,
+          plan: 'free',
+          status: 'active',
+          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+        });
+
+        // Automatically sign in the user after signup
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (signInError) {
+          setError('Account created but auto-login failed. Please log in manually.');
+          setLoading(false);
+          navigate('/auth/sign-up-success');
+        } else {
+          // User is now logged in, redirect to callback to set up session
+          navigate('/auth/callback');
+        }
+      } catch (err) {
+        setError('An error occurred during signup. Please try again.');
+        setLoading(false);
+      }
     }
     setLoading(false);
   };
