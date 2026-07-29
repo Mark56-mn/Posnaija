@@ -39,7 +39,14 @@ export default function RegisterPage() {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      // Handle email rate limit error with better messaging
+      if (signUpError.message?.includes('rate') || signUpError.code === 'over_email_send_rate_limit') {
+        setError('Too many signup attempts. Please wait a few minutes and try again.');
+      } else if (signUpError.message?.includes('already registered')) {
+        setError('This email is already registered. Please login or use a different email.');
+      } else {
+        setError(signUpError.message || 'Signup failed. Please try again.');
+      }
       setLoading(false);
       return;
     }
