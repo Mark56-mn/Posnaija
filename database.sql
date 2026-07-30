@@ -1,5 +1,5 @@
 -- Create profiles table
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
     business_name TEXT NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE profiles (
 );
 
 -- Create subscriptions table
-CREATE TABLE subscriptions (
+CREATE TABLE IF NOT EXISTS subscriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     plan TEXT NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE subscriptions (
 );
 
 -- Create products table
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE products (
 );
 
 -- Create sales table
-CREATE TABLE sales (
+CREATE TABLE IF NOT EXISTS sales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     customer_id UUID,
@@ -66,7 +66,7 @@ CREATE TABLE sales (
 );
 
 -- Create customers table
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE customers (
 );
 
 -- Create categories table
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE categories (
 );
 
 -- Create debts table
-CREATE TABLE debts (
+CREATE TABLE IF NOT EXISTS debts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
@@ -100,7 +100,7 @@ CREATE TABLE debts (
 );
 
 -- Create staff table
-CREATE TABLE staff (
+CREATE TABLE IF NOT EXISTS staff (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -110,7 +110,7 @@ CREATE TABLE staff (
 );
 
 -- Create stock_audit_logs table
-CREATE TABLE stock_audit_logs (
+CREATE TABLE IF NOT EXISTS stock_audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
