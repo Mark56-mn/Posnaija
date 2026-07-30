@@ -158,6 +158,9 @@ class POSDatabase extends Dexie {
       sync_queue: '++id, table_name, record_id, action',
       stock_audit_logs: 'id, admin_id, product_id, created_at, synced',
     });
+    this.version(3).stores({
+      products: 'id, admin_id, name, category_id, sku, synced',
+    });
   }
 }
 

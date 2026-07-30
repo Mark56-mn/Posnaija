@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useCartStore } from '../../store/cartStore';
 import { db } from '../../lib/db';
 import { supabase } from '../../lib/supabase';
@@ -13,8 +14,6 @@ import BarcodeScannerModal from '../../components/pos/BarcodeScannerModal';
 
 export default function NewSalePage() {
   const { session } = usePermissions();
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [completedSale, setCompletedSale] = useState<any>(null);
@@ -22,13 +21,28 @@ export default function NewSalePage() {
   const [showScanner, setShowScanner] = useState(false);
   const cart = useCartStore();
 
+  const categories = useLiveQuery(() => db.categories.toArray()) || [];
+  
+  const filteredProducts = useLiveQuery(
+    async () => {
+      const searchLower = search.toLowerCase();
+      let query: any = db.products.toCollection();
+
+      if (activeCategory !== 'all') {
+        query = db.products.where('category_id').equals(activeCategory);
+      }
+
+      if (searchLower) {
+        return await query.filter((p: any) => p.name.toLowerCase().includes(searchLower) || (p.sku && p.sku.toLowerCase().includes(searchLower))).limit(50).toArray();
+      }
+
+      return await query.limit(100).toArray();
+    },
+    [search, activeCategory]
+  ) || [];
+
   useEffect(() => {
     async function loadData() {
-      const p = await db.products.toArray();
-      const c = await db.categories.toArray();
-      setProducts(p);
-      setCategories(c);
-      
       const draft = await db.draft_orders.get('current');
       if (draft && draft.items) {
         // Simple restore (in a real app we'd prompt)
@@ -63,14 +77,15 @@ export default function NewSalePage() {
 
       if (e.key === 'Enter') {
         if (barcodeBuffer.length > 0) {
-          const scannedProduct = products.find(p => p.sku === barcodeBuffer);
-          if (scannedProduct) {
-             if (scannedProduct.quantity > 0) {
-               cart.addItem(scannedProduct);
-             } else {
-               alert(`Product "${scannedProduct.name}" is out of stock!`);
-             }
-          }
+          db.products.where('sku').equals(barcodeBuffer).first().then(scannedProduct => {
+            if (scannedProduct) {
+               if (scannedProduct.quantity > 0) {
+                 cart.addItem(scannedProduct);
+               } else {
+                 alert(`Product "${scannedProduct.name}" is out of stock!`);
+               }
+            }
+          });
           barcodeBuffer = '';
         }
       } else if (e.key.length === 1) {
@@ -80,13 +95,7 @@ export default function NewSalePage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [products, cart]);
-
-  const filteredProducts = products.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat = activeCategory === 'all' || p.category_id === activeCategory;
-    return matchSearch && matchCat;
-  });
+  }, [cart]);
 
   const handleCompleteSale = async () => {
     if (!session) return;
@@ -170,9 +179,10 @@ export default function NewSalePage() {
                 placeholder="Search products or scan barcode..." 
                 value={search} 
                 onChange={e => setSearch(e.target.value)}
-                onKeyDown={e => {
+                onKeyDown={async e => {
                   if (e.key === 'Enter' && search) {
-                    const matched = products.find(p => p.sku === search || p.name.toLowerCase() === search.toLowerCase());
+                    const searchLower = search.toLowerCase();
+                    const matched = await db.products.filter(p => p.sku === search || p.name.toLowerCase() === searchLower).first();
                     if (matched) {
                       if (matched.quantity > 0) {
                         cart.addItem(matched);

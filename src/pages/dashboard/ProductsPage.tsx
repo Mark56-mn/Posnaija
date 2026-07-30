@@ -1,5 +1,6 @@
 import React from "react";
 import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../lib/db';
 import { supabase } from '../../lib/supabase';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -11,8 +12,6 @@ import { Search, Plus, Edit2, Trash2, AlertTriangle, ArrowUpDown, History } from
 
 export default function ProductsPage() {
   const { session } = usePermissions();
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -21,6 +20,32 @@ export default function ProductsPage() {
   const [showAuditLogsModal, setShowAuditLogsModal] = useState(false);
   const [adjustProductId, setAdjustProductId] = useState<string | null>(null);
   
+  const categories = useLiveQuery(() => db.categories.toArray()) || [];
+  const productCount = useLiveQuery(() => db.products.count()) || 0;
+  
+  const lowStockProducts = useLiveQuery(() => 
+    db.products.filter(p => p.quantity <= p.low_stock_alert).toArray()
+  ) || [];
+
+  const filtered = useLiveQuery(
+    async () => {
+      const searchLower = search.toLowerCase();
+      if (searchLower) {
+        return await db.products
+          .filter(p => p.name.toLowerCase().includes(searchLower) || (p.sku && p.sku.toLowerCase().includes(searchLower)))
+          .limit(50)
+          .toArray();
+      }
+      return await db.products.limit(100).toArray();
+    },
+    [search]
+  ) || [];
+
+  const adjustingProduct = useLiveQuery(
+    () => (adjustProductId ? db.products.get(adjustProductId) : Promise.resolve(null)),
+    [adjustProductId]
+  );
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -41,11 +66,7 @@ export default function ProductsPage() {
   });
 
   const loadData = async () => {
-    const p = await db.products.toArray();
-    const c = await db.categories.toArray();
     const logs = await db.stock_audit_logs.toArray();
-    setProducts(p);
-    setCategories(c);
     setAuditLogs(logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
   };
 
@@ -59,7 +80,7 @@ export default function ProductsPage() {
     
     const id = editingId || crypto.randomUUID();
     const isNew = !editingId;
-    const oldProduct = isNew ? null : products.find(p => p.id === id);
+    const oldProduct = isNew ? null : await db.products.get(id);
     
     const product = {
       id,
@@ -116,7 +137,7 @@ export default function ProductsPage() {
     e.preventDefault();
     if (!session || !adjustProductId) return;
     
-    const product = products.find(p => p.id === adjustProductId);
+    const product = await db.products.get(adjustProductId);
     if (!product) return;
     
     const amount = Number(adjustData.amount);
@@ -182,11 +203,8 @@ export default function ProductsPage() {
     loadData();
   };
 
-  const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-  const lowStockProducts = products.filter(p => p.quantity <= p.low_stock_alert);
-
   const handleAddProductClick = () => {
-    if (session?.plan === 'free' && products.length >= 20) {
+    if (session?.plan === 'free' && productCount >= 20) {
       alert("You have reached the 20 products limit on the Free Plan. Please upgrade to add more products.");
       return;
     }
@@ -385,7 +403,7 @@ export default function ProductsPage() {
             <div className="p-6">
               <h2 className="text-xl font-bold mb-1">Adjust Stock</h2>
               <p className="text-sm text-[var(--color-muted)] mb-4">
-                {products.find(p => p.id === adjustProductId)?.name} (Current: {products.find(p => p.id === adjustProductId)?.quantity})
+                {adjustingProduct?.name} (Current: {adjustingProduct?.quantity})
               </p>
               
               <form onSubmit={handleAdjustStock} className="space-y-4">
