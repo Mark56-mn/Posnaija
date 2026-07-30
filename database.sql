@@ -136,15 +136,33 @@ ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
 ALTER TABLE stock_audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for profiles (users can read/update their own profile)
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
 -- Create policies for other tables (users can manage records where admin_id = their uid)
+DROP POLICY IF EXISTS "Users can manage own subscriptions" ON subscriptions;
 CREATE POLICY "Users can manage own subscriptions" ON subscriptions FOR ALL USING (auth.uid() = admin_id);
+
+DROP POLICY IF EXISTS "Users can manage own products" ON products;
 CREATE POLICY "Users can manage own products" ON products FOR ALL USING (auth.uid() = admin_id);
+
+DROP POLICY IF EXISTS "Users can manage own sales" ON sales;
 CREATE POLICY "Users can manage own sales" ON sales FOR ALL USING (auth.uid() = admin_id);
+
+DROP POLICY IF EXISTS "Users can manage own customers" ON customers;
 CREATE POLICY "Users can manage own customers" ON customers FOR ALL USING (auth.uid() = admin_id);
+
+DROP POLICY IF EXISTS "Users can manage own categories" ON categories;
 CREATE POLICY "Users can manage own categories" ON categories FOR ALL USING (auth.uid() = admin_id);
+
+DROP POLICY IF EXISTS "Users can manage own debts" ON debts;
 CREATE POLICY "Users can manage own debts" ON debts FOR ALL USING (auth.uid() = admin_id);
+
+DROP POLICY IF EXISTS "Users can manage own staff" ON staff;
 CREATE POLICY "Users can manage own staff" ON staff FOR ALL USING (auth.uid() = admin_id);
+
+DROP POLICY IF EXISTS "Users can manage own stock audit logs" ON stock_audit_logs;
 CREATE POLICY "Users can manage own stock audit logs" ON stock_audit_logs FOR ALL USING (auth.uid() = admin_id);
