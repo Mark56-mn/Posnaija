@@ -2,6 +2,9 @@ import Dexie, { Table } from 'dexie';
 
 export interface Session {
   id: number;
+  branch_id?: string;
+  branch_name?: string;
+  parent_admin_id?: string;
   admin_id: string;
   staff_id?: string;
   name: string;
@@ -19,6 +22,7 @@ export interface Session {
 
 export interface LocalProduct {
   id: string;
+  branch_id?: string;
   admin_id: string;
   name: string;
   category_id?: string;
@@ -37,6 +41,7 @@ export interface LocalProduct {
 
 export interface LocalSale {
   id: string;
+  branch_id?: string;
   admin_id: string;
   customer_id?: string;
   customer_name: string;
@@ -92,10 +97,21 @@ export interface LocalDebt {
 
 export interface LocalStaff {
   id: string;
+  branch_id?: string;
   admin_id: string;
   name: string;
   role: string;
   pin: string;
+  created_at: string;
+  synced: boolean;
+}
+
+
+export interface LocalBranch {
+  id: string;
+  admin_id: string;
+  name: string;
+  location?: string;
   created_at: string;
   synced: boolean;
 }
@@ -142,6 +158,7 @@ class POSDatabase extends Dexie {
   staff!: Table<LocalStaff>;
   draft_orders!: Table<DraftOrder>;
   sync_queue!: Table<SyncQueueItem>;
+  branches!: Table<LocalBranch>;
   stock_audit_logs!: Table<StockAuditLog>;
 
   constructor() {
@@ -157,6 +174,12 @@ class POSDatabase extends Dexie {
       draft_orders: 'id, admin_id',
       sync_queue: '++id, table_name, record_id, action',
       stock_audit_logs: 'id, admin_id, product_id, created_at, synced',
+    });
+    this.version(4).stores({
+      branches: 'id, admin_id, name, synced',
+      products: 'id, admin_id, branch_id, name, category_id, sku, synced',
+      sales: 'id, admin_id, branch_id, created_at, synced',
+      staff: 'id, admin_id, branch_id, synced',
     });
     this.version(3).stores({
       products: 'id, admin_id, name, category_id, sku, synced',

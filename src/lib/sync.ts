@@ -35,7 +35,7 @@ export async function syncUp() {
 
   const tables = [
     'products', 'sales', 'customers',
-    'categories', 'debts', 'staff'
+    'categories', 'debts', 'staff', 'branches', 'stock_audit_logs'
   ] as const;
 
   for (const table of tables) {

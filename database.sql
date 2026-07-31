@@ -169,3 +169,35 @@ CREATE POLICY "Users can manage own staff" ON staff FOR ALL USING (auth.uid() = 
 
 DROP POLICY IF EXISTS "Users can manage own stock audit logs" ON stock_audit_logs;
 CREATE POLICY "Users can manage own stock audit logs" ON stock_audit_logs FOR ALL USING (auth.uid() = admin_id);
+
+-- Create branches table
+CREATE TABLE IF NOT EXISTS branches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    location TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for branches
+ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage own branches" ON branches;
+CREATE POLICY "Users can manage own branches" ON branches FOR ALL USING (auth.uid() = admin_id);
+
+-- Add branch_id to sales
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS branch_id UUID REFERENCES branches(id) ON DELETE SET NULL;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS branch_id UUID REFERENCES branches(id) ON DELETE SET NULL;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS branch_id UUID REFERENCES branches(id) ON DELETE SET NULL;
+
+-- Create auditors table for internet-based login (can just use a separate table for auditor credentials if we don't want to mess with Supabase Auth for them, but Supabase Auth is better. Let's assume auditors sign up with an Auditor Registration form using Supabase Auth, and the admin provides them an Invite Code).
+-- Actually, let's add an invite_code to profiles for the admin.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS invite_code TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS parent_admin_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
+
+-- Update RLS for auditors to view admin's data
+DROP POLICY IF EXISTS "Auditors can view admin sales" ON sales;
+CREATE POLICY "Auditors can view admin sales" ON sales FOR SELECT USING (
+    auth.uid() = admin_id OR 
+    auth.uid() IN (SELECT id FROM profiles WHERE parent_admin_id = sales.admin_id AND role = 'auditor')
+);
+-- we need similar policies for products, etc. if auditors need them.

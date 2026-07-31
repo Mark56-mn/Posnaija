@@ -29,6 +29,8 @@ import StaffPage from './pages/dashboard/StaffPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 
 import PublicLayout from './components/layout/PublicLayout';
+import AuditorLoginPage from './pages/auth/AuditorLoginPage';
+import AuditorDashboard from './pages/dashboard/AuditorDashboard';
 
 export default function App() {
   return (
@@ -51,6 +53,8 @@ export default function App() {
         <Route path="/auth/sign-up-success" element={<SignUpSuccessPage />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/auditor/login" element={<AuditorLoginPage />} />
+        <Route path="/auditor/dashboard" element={<AuditorDashboard />} />
 
         <Route path="/onboarding" element={<OnboardingPage />} />
 

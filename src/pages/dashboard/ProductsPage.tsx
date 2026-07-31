@@ -138,6 +138,7 @@ export default function ProductsPage() {
         const product = {
           id: existing ? existing.id : crypto.randomUUID(),
           admin_id: session.admin_id,
+          branch_id: session.branch_id,
           name: row.name,
           sku: row.sku || '',
           cost_price: Number(row.cost_price) || 0,
@@ -175,6 +176,7 @@ export default function ProductsPage() {
     const product = {
       id,
       admin_id: session.admin_id,
+      branch_id: session.branch_id,
       ...formData,
       cost_price: Number(formData.cost_price),
       selling_price: Number(formData.selling_price),

@@ -1,4 +1,9 @@
 import { usePermissions } from '../../hooks/usePermissions';
+import React, { useEffect } from 'react';
+import { Input } from '../../components/ui/Input';
+import { Trash2, Building2, UserCircle2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { db } from '../../lib/db';
@@ -8,6 +13,62 @@ import { useState } from 'react';
 export default function SettingsPage() {
   const { session } = usePermissions();
   const [upgrading, setUpgrading] = useState(false);
+  const [newBranchName, setNewBranchName] = useState('');
+  const branches = useLiveQuery(() => db.branches.toArray());
+
+
+  useEffect(() => {
+    async function ensureInviteCode() {
+      if (session && session.role === 'admin') {
+        const { data } = await supabase.from('profiles').select('invite_code').eq('id', session.admin_id).single();
+        if (data && !data.invite_code) {
+          const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+          await supabase.from('profiles').update({ invite_code: code }).eq('id', session.admin_id);
+          // Just update local display
+          session.invite_code = code;
+        } else if (data) {
+          session.invite_code = data.invite_code;
+        }
+      }
+    }
+    ensureInviteCode();
+  }, [session]);
+
+
+  const handleAddBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session || !newBranchName.trim()) return;
+    await db.branches.put({
+      id: crypto.randomUUID(),
+      admin_id: session.admin_id,
+      name: newBranchName.trim(),
+      created_at: new Date().toISOString(),
+      synced: false
+    });
+    setNewBranchName('');
+  };
+
+  const handleDeleteBranch = async (id: string) => {
+    if (confirm('Are you sure you want to delete this branch?')) {
+      await db.branches.delete(id);
+      if (session.branch_id === id) {
+         await db.session.update(session.id, { branch_id: undefined, branch_name: undefined });
+         window.location.reload();
+      }
+    }
+  };
+
+  const handleSetDeviceBranch = async (id: string) => {
+    if (!session) return;
+    if (id === '') {
+      await db.session.update(session.id, { branch_id: undefined, branch_name: undefined });
+    } else {
+      const b = await db.branches.get(id);
+      if (b) await db.session.update(session.id, { branch_id: b.id, branch_name: b.name });
+    }
+    window.location.reload();
+  };
+
 
   if (!session) return null;
 

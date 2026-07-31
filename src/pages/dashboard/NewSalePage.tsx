@@ -107,6 +107,7 @@ export default function NewSalePage() {
     const sale = {
       id: saleId,
       admin_id: session.admin_id,
+      branch_id: session.branch_id,
       customer_name: cart.customerName || 'Walk-in',
       customer_id: cart.customerId || undefined,
       items: JSON.stringify(cart.items),
