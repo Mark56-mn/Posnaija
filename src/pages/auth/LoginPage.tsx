@@ -36,8 +36,44 @@ export default function LoginPage() {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
 
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-      if (!profile) throw new Error("Profile not found");
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+      
+      if (profileError || !profile) {
+        console.error('[v0] Profile fetch error:', profileError);
+        // If profile doesn't exist, create a minimal one for backward compatibility
+        if (profileError?.code === 'PGRST116') { // No rows returned
+          await supabase.from('profiles').insert({
+            id: data.user.id,
+            email: data.user.email,
+            business_name: 'My Business',
+            role: 'admin',
+            onboarding_completed: false,
+            plan: 'free'
+          });
+          // Fetch the newly created profile
+          const { data: newProfile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+          if (newProfile) {
+            await db.session.put({
+              id: 1,
+              admin_id: data.user.id,
+              name: newProfile.business_name,
+              email: data.user.email,
+              role: newProfile.role || 'admin',
+              business_name: newProfile.business_name,
+              business_phone: newProfile.business_phone,
+              whatsapp_number: newProfile.whatsapp_number,
+              business_logo: newProfile.business_logo,
+              is_staff: false,
+              onboarding_completed: false,
+              plan: newProfile.plan || 'free',
+              offline_pin: newProfile.offline_pin || undefined,
+            });
+            navigate('/onboarding', { replace: true });
+            return;
+          }
+        }
+        throw new Error("Profile not found");
+      }
 
       await db.session.put({
         id: 1,
@@ -63,6 +99,7 @@ export default function LoginPage() {
         navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
+      console.error('[v0] Login error:', err);
       setError(err.message || 'Failed to login');
     } finally {
       setLoading(false);
