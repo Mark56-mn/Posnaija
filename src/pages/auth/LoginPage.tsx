@@ -69,6 +69,7 @@ export default function LoginPage() {
         email: data.user.email,
         role: profile.role || 'admin',
         business_name: profile.business_name,
+        business_address: profile.business_logo || profile.business_address, // Read from logo column workaround
         business_phone: profile.business_phone,
         whatsapp_number: profile.whatsapp_number,
         business_logo: profile.business_logo,

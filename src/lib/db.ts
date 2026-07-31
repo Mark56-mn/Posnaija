@@ -11,6 +11,7 @@ export interface Session {
   email?: string;
   role: 'admin' | 'manager' | 'staff';
   business_name: string;
+  business_address?: string;
   business_phone?: string;
   whatsapp_number?: string;
   business_logo?: string;

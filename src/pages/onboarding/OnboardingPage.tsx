@@ -22,12 +22,18 @@ export default function OnboardingPage() {
 
     // Update Supabase
     if (navigator.onLine) {
-      await supabase.from('profiles').update({
-        business_address: formData.business_address,
+      const { error } = await supabase.from('profiles').update({
+        business_logo: formData.business_address, // Workaround: store address in unused logo column
         business_phone: formData.business_phone,
         whatsapp_number: formData.whatsapp_number,
         onboarding_completed: true
       }).eq('id', session.admin_id);
+      
+      if (error) {
+        console.error("Failed to update profile", error);
+        alert("Failed to save profile: " + error.message);
+        return; // don't proceed
+      }
       
       if (formData.pin) {
         localStorage.setItem('admin_pin', formData.pin); // Basic implementation for PIN
@@ -35,7 +41,12 @@ export default function OnboardingPage() {
     }
 
     // Update Dexie
-    await db.session.update(1, { onboarding_completed: true });
+    await db.session.update(1, { 
+      onboarding_completed: true,
+      business_address: formData.business_address,
+      business_phone: formData.business_phone,
+      whatsapp_number: formData.whatsapp_number
+    });
     
     navigate('/dashboard', { replace: true });
   };

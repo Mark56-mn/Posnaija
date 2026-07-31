@@ -1,3 +1,4 @@
+import PWAInstallPrompt from '../PWAInstallPrompt';
 import { Outlet, Link } from 'react-router-dom';
 import { Store } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -5,6 +6,7 @@ import { Button } from '../ui/Button';
 export default function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col">
+      <PWAInstallPrompt />
       <header className="border-b border-[var(--color-muted)]/20 bg-[var(--color-background)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--color-background)]/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">

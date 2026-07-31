@@ -1,3 +1,4 @@
+import PWAInstallPrompt from '../../components/PWAInstallPrompt';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
 import { 
@@ -70,7 +71,9 @@ export default function DashboardLayout() {
   const hasProPlan = session.plan === 'pro' || session.plan === 'lifetime';
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] flex flex-col md:flex-row text-[var(--color-text)]">
+    <div className="min-h-screen bg-[var(--color-background)] flex flex-col text-[var(--color-text)]">
+      <PWAInstallPrompt />
+      <div className="flex-1 flex flex-col md:flex-row relative">
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-[var(--color-muted)]/20 bg-[var(--color-surface)] z-20">
         <div className="flex items-center space-x-2">
@@ -159,6 +162,8 @@ export default function DashboardLayout() {
           </div>
         )}
       </main>
+      </div>
     </div>
+
   );
 }

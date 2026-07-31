@@ -75,6 +75,35 @@ export default function ProductsPage() {
     setAuditLogs(logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
   };
 
+  
+  useEffect(() => {
+    if (!showScanner && !scanningForSku) return;
+    
+    const scanner = new Html5QrcodeScanner(
+      "reader",
+      { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
+      false
+    );
+    
+    scanner.render(
+      (decodedText) => {
+        if (scanningForSku) {
+           setFormData(prev => ({ ...prev, sku: decodedText }));
+           setScanningForSku(false);
+        } else {
+           setSearchTerm(decodedText);
+           setShowScanner(false);
+        }
+        scanner.clear();
+      },
+      (errorMessage) => {}
+    );
+    
+    return () => {
+      scanner.clear().catch(console.error);
+    };
+  }, [showScanner, scanningForSku]);
+
   useEffect(() => {
     loadData();
   }, []);

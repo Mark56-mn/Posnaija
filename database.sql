@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
     business_name TEXT NOT NULL,
+    business_address TEXT,
     business_phone TEXT,
     whatsapp_number TEXT,
     business_logo TEXT,
