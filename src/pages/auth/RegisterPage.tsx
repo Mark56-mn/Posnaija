@@ -31,6 +31,9 @@ export default function RegisterPage() {
       password: formData.password,
       options: {
         emailRedirectTo: window.location.origin + '/auth/callback',
+        data: {
+          business_name: formData.businessName,
+        }
       }
     });
 
@@ -41,7 +44,9 @@ export default function RegisterPage() {
     }
 
     if (data.user) {
-      // Create profile
+      // We attempt to create the profile, but if email confirmation is required,
+      // this will fail due to RLS because there is no active session yet.
+      // We will also attempt to create the profile upon first login as a fallback.
       await supabase.from('profiles').insert({
         id: data.user.id,
         email: formData.email,

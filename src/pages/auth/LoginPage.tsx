@@ -36,8 +36,31 @@ export default function LoginPage() {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
 
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-      if (!profile) throw new Error("Profile not found");
+      let { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+      
+      if (!profile) {
+        // Create profile if it doesn't exist (e.g. failed during signup due to RLS without session)
+        const businessName = data.user.user_metadata?.business_name || 'My Business';
+        const { data: newProfile, error: createError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: data.user.email,
+          business_name: businessName,
+          role: 'admin',
+          onboarding_completed: false,
+          plan: 'free'
+        }).select().single();
+        
+        if (createError) throw new Error("Failed to initialize profile: " + createError.message);
+        profile = newProfile;
+        
+        // Also ensure a free subscription exists
+        await supabase.from('subscriptions').insert({
+          admin_id: data.user.id,
+          plan: 'free',
+          status: 'active',
+          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+        });
+      }
 
       await db.session.put({
         id: 1,

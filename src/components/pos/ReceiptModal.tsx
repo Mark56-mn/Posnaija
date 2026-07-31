@@ -25,13 +25,13 @@ export default function ReceiptModal({ sale, session, onClose }: any) {
   const qrPayload = `Receipt: ${sale.receipt_number}\nTotal: ${formatNaira(sale.total)}\nDate: ${formatDate(sale.created_at)}\nStore: ${session.business_name}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 no-print">
-      <Card className="w-full max-w-sm bg-[var(--color-surface)] relative max-h-[90vh] flex flex-col print-card">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 print:static print:bg-transparent print:p-0 print:block">
+      <Card className="w-full max-w-sm bg-[var(--color-surface)] relative max-h-[90vh] flex flex-col print-card print:border-none print:shadow-none print:static print:max-h-none print:max-w-none print:block">
         <button onClick={onClose} className="absolute right-4 top-4 text-[var(--color-muted)] hover:text-white no-print z-10">
           <X className="h-5 w-5" />
         </button>
         
-        <div className="flex-1 overflow-y-auto p-6" id="printable-receipt">
+        <div className="flex-1 overflow-y-auto p-6 print:overflow-visible print:p-0 print:w-[80mm] print:absolute print:top-0 print:left-0" id="printable-receipt">
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold text-print">{session.business_name}</h2>
             {session.business_address && <p className="text-sm mt-1 text-print">{session.business_address}</p>}
