@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { formatNaira, formatDateOnly, formatTimeOnly } from '../../lib/utils';
-import { Search, Plus, Edit2, Trash2, AlertTriangle, ArrowUpDown, History } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, AlertTriangle, ArrowUpDown, History, Download, Upload, List } from 'lucide-react';
+import { exportToCSV, parseCSV } from '../../lib/csv';
+import { useRef } from 'react';
 
 export default function ProductsPage() {
   const { session } = usePermissions();
@@ -18,6 +20,9 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdjustStockModal, setShowAdjustStockModal] = useState(false);
   const [showAuditLogsModal, setShowAuditLogsModal] = useState(false);
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [adjustProductId, setAdjustProductId] = useState<string | null>(null);
   
   const categories = useLiveQuery(() => db.categories.toArray()) || [];
@@ -73,6 +78,91 @@ export default function ProductsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session || !newCategoryName.trim()) return;
+    await db.categories.put({
+      id: crypto.randomUUID(),
+      admin_id: session.admin_id,
+      name: newCategoryName.trim(),
+      created_at: new Date().toISOString(),
+      synced: false
+    });
+    setNewCategoryName('');
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (confirm('Are you sure you want to delete this category? Products in this category will be uncategorized.')) {
+      await db.categories.delete(id);
+      const productsToUpdate = await db.products.where('category_id').equals(id).toArray();
+      for (const p of productsToUpdate) {
+        await db.products.update(p.id, { category_id: '', synced: false });
+      }
+    }
+  };
+
+  const handleExportCSV = async () => {
+    const allProducts = await db.products.toArray();
+    exportToCSV(allProducts.map(p => ({
+      name: p.name,
+      sku: p.sku || '',
+      cost_price: p.cost_price,
+      selling_price: p.selling_price,
+      quantity: p.quantity,
+      low_stock_alert: p.low_stock_alert,
+      unit: p.unit,
+      category_id: p.category_id || '',
+      expiry_date: p.expiry_date || ''
+    })), 'products_export.csv');
+  };
+
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!session || !e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    try {
+      const data = await parseCSV(file);
+      for (const row of data) {
+        if (!row.name || !row.selling_price) continue;
+        
+        // Find existing product by SKU if available, otherwise by name
+        let existing = undefined;
+        if (row.sku) {
+          existing = await db.products.where('sku').equals(row.sku).first();
+        }
+        if (!existing) {
+          existing = await db.products.where('name').equals(row.name).first();
+        }
+
+        const product = {
+          id: existing ? existing.id : crypto.randomUUID(),
+          admin_id: session.admin_id,
+          name: row.name,
+          sku: row.sku || '',
+          cost_price: Number(row.cost_price) || 0,
+          selling_price: Number(row.selling_price) || 0,
+          quantity: Number(row.quantity) || 0,
+          low_stock_alert: Number(row.low_stock_alert) || 5,
+          unit: row.unit || 'piece',
+          category_id: row.category_id || '',
+          expiry_date: row.expiry_date || undefined,
+          created_at: existing ? existing.created_at : new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          synced: false
+        };
+        await db.products.put(product);
+      }
+      alert('Products imported successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Error importing products. Please check the CSV format.');
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,11 +313,21 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Products</h1>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={handleAuditLogsClick}>
-            <History className="h-4 w-4 mr-2" /> Audit Logs
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleImportCSV} />
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} title="Import CSV">
+            <Upload className="h-4 w-4 mr-2" /> Import
           </Button>
-          <Button onClick={handleAddProductClick}>
+          <Button variant="outline" size="sm" onClick={handleExportCSV} title="Export CSV">
+            <Download className="h-4 w-4 mr-2" /> Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowCategoriesModal(true)}>
+            <List className="h-4 w-4 mr-2" /> Categories
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleAuditLogsClick}>
+            <History className="h-4 w-4 mr-2" /> Audit
+          </Button>
+          <Button size="sm" onClick={handleAddProductClick}>
             <Plus className="h-4 w-4 mr-2" /> Add Product
           </Button>
         </div>
@@ -348,8 +448,18 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-[var(--color-muted)] mb-1 block">SKU / Barcode</label>
-                  <Input value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} placeholder="Scan or type barcode" />
+                  <Input value={formData.sku}  onChange={e => setFormData({...formData, sku: e.target.value})} placeholder="Scan or type barcode" />
                 </div>
+                <div>
+                  <label className="text-sm font-medium text-[var(--color-muted)] mb-1 block">Category</label>
+                  <select className="flex h-10 w-full rounded-md border border-[var(--color-muted)]/30 bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]" value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})}>
+                    <option value="">No Category</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-[var(--color-muted)] mb-1 block">Selling Price (₦)</label>
@@ -396,6 +506,45 @@ export default function ProductsPage() {
         </div>
       )}
 
+      
+      {/* Categories Modal */}
+      {showCategoriesModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md max-h-[90vh] flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-[var(--color-muted)]/10 pb-4">
+              <CardTitle>Manage Categories</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowCategoriesModal(false)}>Close</Button>
+            </CardHeader>
+            <div className="p-4 border-b border-[var(--color-muted)]/10">
+              <form onSubmit={handleAddCategory} className="flex gap-2">
+                <Input required placeholder="New category name" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
+                <Button type="submit">Add</Button>
+              </form>
+            </div>
+            <CardContent className="flex-1 overflow-auto p-0">
+              <table className="w-full text-left border-collapse">
+                <tbody className="divide-y divide-[var(--color-muted)]/10">
+                  {categories.map(c => (
+                    <tr key={c.id} className="hover:bg-[var(--color-background)]/50">
+                      <td className="p-4 font-medium">{c.name}</td>
+                      <td className="p-4 text-right">
+                        <Button variant="ghost" size="sm" className="text-[var(--color-danger)]" onClick={() => handleDeleteCategory(c.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {categories.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="p-8 text-center text-[var(--color-muted)]">No categories found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       {/* Adjust Stock Modal */}
       {showAdjustStockModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">

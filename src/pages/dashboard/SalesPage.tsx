@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { db } from '../../lib/db';
 import { Card } from '../../components/ui/Card';
 import { formatNaira, formatDate } from '../../lib/utils';
+import { Button } from '../../components/ui/Button';
+import { exportToCSV } from '../../lib/csv';
+import { Download } from 'lucide-react';
 
 export default function SalesPage() {
   const [sales, setSales] = useState<any[]>([]);
@@ -14,9 +17,29 @@ export default function SalesPage() {
 
   const total = sales.reduce((sum, s) => sum + s.total, 0);
 
+  const handleExportCSV = () => {
+    exportToCSV(sales.map(s => ({
+      receipt_number: s.receipt_number,
+      date: formatDate(s.created_at),
+      customer: s.customer_name,
+      subtotal: s.subtotal,
+      discount: s.discount,
+      total: s.total,
+      payment_method: s.payment_method,
+      amount_paid: s.amount_paid,
+      cashier: s.served_by
+    })), 'sales_report.csv');
+  };
+
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Sales History</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Sales History</h1>
+        <Button variant="outline" onClick={handleExportCSV}>
+          <Download className="h-4 w-4 mr-2" /> Export CSV
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">

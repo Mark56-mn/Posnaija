@@ -469,7 +469,7 @@ export default function NewSalePage() {
         <BarcodeScannerModal
           onScan={(decodedText) => {
             setShowScanner(false);
-            const matched = products.find(p => p.sku === decodedText);
+            db.products.where('sku').equals(decodedText).first().then((matched) => {
             if (matched) {
               if (matched.quantity > 0) {
                 cart.addItem(matched);
@@ -479,6 +479,7 @@ export default function NewSalePage() {
             } else {
               alert(`No product found for barcode: ${decodedText}`);
             }
+          });
           }}
           onClose={() => setShowScanner(false)}
         />
