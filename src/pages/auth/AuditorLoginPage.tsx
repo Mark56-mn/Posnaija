@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -129,6 +129,22 @@ export default function AuditorLoginPage() {
                 <Input required type="password" minLength={8} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
               </div>
               
+                            {!isLogin && (
+                <div className="flex items-start space-x-2 pt-2">
+                  <input type="checkbox" required className="mt-1 border-[var(--color-muted)]/30 rounded bg-transparent" />
+                  <span className="text-xs text-[var(--color-muted)] leading-relaxed">
+                    I agree to the <Link to="/terms" className="text-[var(--color-accent)] hover:underline" target="_blank">Terms & Conditions</Link> and <Link to="/privacy-policy" className="text-[var(--color-accent)] hover:underline" target="_blank">Privacy Policy</Link>
+                  </span>
+                </div>
+              )}
+                            {!isLogin && (
+                <div className="flex items-start space-x-2 pt-2">
+                  <input type="checkbox" required className="mt-1 border-[var(--color-muted)]/30 rounded bg-transparent" />
+                  <span className="text-xs text-[var(--color-muted)] leading-relaxed">
+                    I agree to the <Link to="/terms" className="text-[var(--color-accent)] hover:underline" target="_blank">Terms & Conditions</Link> and <Link to="/privacy-policy" className="text-[var(--color-accent)] hover:underline" target="_blank">Privacy Policy</Link>
+                  </span>
+                </div>
+              )}
               <Button type="submit" className="w-full h-12 text-lg mt-6" disabled={loading}>
                 {loading ? (isLogin ? 'Logging in...' : 'Registering...') : (isLogin ? 'Login' : 'Register')}
               </Button>
