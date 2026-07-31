@@ -142,6 +142,9 @@ CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.ui
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
 -- Create policies for other tables (users can manage records where admin_id = their uid)
 DROP POLICY IF EXISTS "Users can manage own subscriptions" ON subscriptions;
 CREATE POLICY "Users can manage own subscriptions" ON subscriptions FOR ALL USING (auth.uid() = admin_id);
