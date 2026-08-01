@@ -76,6 +76,7 @@ export default function LoginPage() {
         is_staff: false,
         onboarding_completed: profile.onboarding_completed,
         plan: profile.plan || 'free',
+        created_at: profile.created_at,
         offline_pin: profile.offline_pin || undefined,
       });
 
@@ -111,6 +112,7 @@ export default function LoginPage() {
           is_staff: true,
           onboarding_completed: true,
           plan: adminSession?.plan || 'free',
+          created_at: adminSession?.created_at,
         });
         
         if (selectedStaff.role === 'staff') {

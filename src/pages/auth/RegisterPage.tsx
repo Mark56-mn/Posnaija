@@ -101,7 +101,7 @@ export default function RegisterPage() {
               <div className="flex items-start space-x-2 pt-2">
                 <input type="checkbox" required className="mt-1 border-[var(--color-muted)]/30 rounded bg-transparent" />
                 <span className="text-xs text-[var(--color-muted)] leading-relaxed">
-                  I agree to the <Link to="/terms" className="text-[var(--color-accent)] hover:underline" target="_blank">Terms & Conditions</Link> and <Link to="/privacy-policy" className="text-[var(--color-accent)] hover:underline" target="_blank">Privacy Policy</Link>
+                  I agree to the <Link to="/terms" className="text-[var(--color-accent)] hover:underline">Terms & Conditions</Link> and <Link to="/privacy-policy" className="text-[var(--color-accent)] hover:underline">Privacy Policy</Link>
                 </span>
               </div>
 

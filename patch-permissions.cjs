@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'react';
-import { db, Session } from '../lib/db';
+const fs = require('fs');
+let code = fs.readFileSync('src/hooks/usePermissions.ts', 'utf8');
 
-export function usePermissions() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+const target = `  return {
+    loading,
+    session,
+    isAdmin: session?.role === 'admin',
+    isManager: session?.role === 'manager',
+    isCashier: session?.role === 'staff',
+    isStaff: session?.is_staff === true,
+    canAccessReports: ['admin', 'manager'].includes(session?.role || ''),
+    canAccessProducts: ['admin', 'manager'].includes(session?.role || ''),
+    canAccessSettings: session?.role === 'admin',
+    canAccessStaff: session?.role === 'admin',
+    canAccessDebts: ['admin', 'manager'].includes(session?.role || ''),
+    canAccessCustomers: ['admin', 'manager'].includes(session?.role || ''),
+    canMakeSales: true,
+  };`;
 
-  useEffect(() => {
-    db.session.get(1).then(s => {
-      setSession(s || null);
-      setLoading(false);
-    });
-  }, []);
-
-  const isTrialActive = () => {
+const replacement = `  const isTrialActive = () => {
     if (!session || !session.created_at) return false;
     const createdAt = new Date(session.created_at);
     const now = new Date();
@@ -41,5 +46,8 @@ export function usePermissions() {
     canAccessDebts: hasFullAccess() && ['admin', 'manager'].includes(session?.role || ''),
     canAccessCustomers: hasFullAccess() && ['admin', 'manager'].includes(session?.role || ''),
     canMakeSales: true,
-  };
-}
+  };`;
+
+code = code.replace(target, replacement);
+
+fs.writeFileSync('src/hooks/usePermissions.ts', code);

@@ -18,6 +18,7 @@ export interface Session {
   is_staff: boolean;
   onboarding_completed: boolean;
   plan: 'free' | 'basic' | 'pro' | 'lifetime';
+  created_at?: string;
   offline_pin?: string;
 }
 

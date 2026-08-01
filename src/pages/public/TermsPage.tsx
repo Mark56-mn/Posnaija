@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { Button } from '../../components/ui/Button';
+
 
 export default function TermsPage() {
   return (
@@ -103,6 +105,14 @@ export default function TermsPage() {
             If you have any questions about these Terms, please <Link to="/contact" className="text-[var(--color-accent)] hover:underline">contact us</Link>.
           </p>
         </section>
+
+        <div className="mt-12 flex justify-center pb-8">
+          <Link to="/auth/register">
+            <Button size="lg" className="px-8 bg-[var(--color-accent)] text-[var(--color-primary)] hover:bg-[var(--color-accent)]/90">
+              Back to Account Creation
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
