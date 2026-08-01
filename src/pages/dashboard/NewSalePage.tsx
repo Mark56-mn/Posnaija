@@ -55,12 +55,24 @@ export default function NewSalePage() {
     loadData();
   }, []);
 
-  // Barcode Scanner Listener
+  // Barcode Scanner & Global Shortcuts Listener
   useEffect(() => {
     let barcodeBuffer = '';
     let lastKeyTime = Date.now();
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Global Shortcuts
+      if (e.key === 'F2') {
+        e.preventDefault();
+        document.getElementById('product-search-input')?.focus();
+        return;
+      }
+      if (e.key === 'F9') {
+        e.preventDefault();
+        document.getElementById('complete-sale-button')?.click();
+        return;
+      }
+
       // Ignore if typing in an input field (scanner will act as keyboard input there anyway)
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
@@ -177,7 +189,8 @@ export default function NewSalePage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--color-muted)]" />
               <Input 
-                placeholder="Search products or scan barcode..." 
+                id="product-search-input"
+                placeholder="Search products or scan... (F2)" 
                 value={search} 
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={async e => {
@@ -445,12 +458,13 @@ export default function NewSalePage() {
           </div>
 
           <Button 
+            id="complete-sale-button"
             size="lg" 
             className="w-full h-14 text-lg" 
             disabled={cart.items.length === 0}
             onClick={handleCompleteSale}
           >
-            Complete Sale
+            Complete Sale (F9)
           </Button>
         </div>
       </div>

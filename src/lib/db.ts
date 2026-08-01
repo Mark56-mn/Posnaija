@@ -134,6 +134,14 @@ export interface SyncQueueItem {
   created_at: string;
 }
 
+export interface LocalPasskey {
+  id: string;
+  admin_id: string;
+  name: string;
+  email: string;
+  created_at: string;
+}
+
 export interface StockAuditLog {
   id: string;
   admin_id: string;
@@ -161,6 +169,7 @@ class POSDatabase extends Dexie {
   sync_queue!: Table<SyncQueueItem>;
   branches!: Table<LocalBranch>;
   stock_audit_logs!: Table<StockAuditLog>;
+  passkeys!: Table<LocalPasskey>;
 
   constructor() {
     super('POSNaijaDB');
@@ -175,6 +184,9 @@ class POSDatabase extends Dexie {
       draft_orders: 'id, admin_id',
       sync_queue: '++id, table_name, record_id, action',
       stock_audit_logs: 'id, admin_id, product_id, created_at, synced',
+    });
+    this.version(5).stores({
+      passkeys: 'id, admin_id, email',
     });
     this.version(4).stores({
       branches: 'id, admin_id, name, synced',

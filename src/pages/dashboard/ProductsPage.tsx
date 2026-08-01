@@ -8,9 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { formatNaira, formatDateOnly, formatTimeOnly } from '../../lib/utils';
-import { Search, Plus, Edit2, Trash2, AlertTriangle, ArrowUpDown, History, Download, Upload, List } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, AlertTriangle, ArrowUpDown, History, Download, Upload, List, ScanLine } from 'lucide-react';
 import { exportToCSV, parseCSV } from '../../lib/csv';
 import { useRef } from 'react';
+import BarcodeScannerModal from '../../components/pos/BarcodeScannerModal';
 
 export default function ProductsPage() {
   const { session } = usePermissions();
@@ -24,6 +25,8 @@ export default function ProductsPage() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [adjustProductId, setAdjustProductId] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanningForSku, setScanningForSku] = useState(false);
   
   const categories = useLiveQuery(() => db.categories.toArray()) || [];
   const productCount = useLiveQuery(() => db.products.count()) || 0;
@@ -76,33 +79,7 @@ export default function ProductsPage() {
   };
 
   
-  useEffect(() => {
-    if (!showScanner && !scanningForSku) return;
-    
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
-      false
-    );
-    
-    scanner.render(
-      (decodedText) => {
-        if (scanningForSku) {
-           setFormData(prev => ({ ...prev, sku: decodedText }));
-           setScanningForSku(false);
-        } else {
-           setSearchTerm(decodedText);
-           setShowScanner(false);
-        }
-        scanner.clear();
-      },
-      (errorMessage) => {}
-    );
-    
-    return () => {
-      scanner.clear().catch(console.error);
-    };
-  }, [showScanner, scanningForSku]);
+
 
   useEffect(() => {
     loadData();
@@ -479,7 +456,12 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-[var(--color-muted)] mb-1 block">SKU / Barcode</label>
-                  <Input value={formData.sku}  onChange={e => setFormData({...formData, sku: e.target.value})} placeholder="Scan or type barcode" />
+                  <div className="relative">
+                    <Input value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} placeholder="Scan or type barcode" className="pr-10" />
+                    <button type="button" onClick={() => { setShowScanner(true); setScanningForSku(true); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[var(--color-muted)] hover:text-[var(--color-accent)]">
+                      <ScanLine className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-[var(--color-muted)] mb-1 block">Category</label>
@@ -678,6 +660,23 @@ export default function ProductsPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+      {showScanner && (
+        <BarcodeScannerModal
+          onScan={(decodedText) => {
+            if (scanningForSku) {
+              setFormData(prev => ({ ...prev, sku: decodedText }));
+              setScanningForSku(false);
+            } else {
+              setSearch(decodedText);
+            }
+            setShowScanner(false);
+          }}
+          onClose={() => {
+            setShowScanner(false);
+            setScanningForSku(false);
+          }}
+        />
       )}
     </div>
   );

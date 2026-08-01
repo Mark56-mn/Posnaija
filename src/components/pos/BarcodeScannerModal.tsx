@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useEffect, useRef, useState } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { X } from 'lucide-react';
 import { Card } from '../ui/Card';
 
@@ -9,27 +9,36 @@ interface BarcodeScannerModalProps {
 }
 
 export default function BarcodeScannerModal({ onScan, onClose }: BarcodeScannerModalProps) {
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    scannerRef.current = new Html5QrcodeScanner(
-      'reader',
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      false
-    );
-
-    scannerRef.current.render(
-      (decodedText) => {
-        onScan(decodedText);
+    const html5QrCode = new Html5Qrcode("reader");
+    
+    html5QrCode.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
       },
-      (error) => {
-        // Ignored, happens frequently when no barcode is in view
+      (decodedText) => {
+        html5QrCode.stop().then(() => {
+          onScan(decodedText);
+        }).catch(err => {
+          console.error(err);
+          onScan(decodedText);
+        });
+      },
+      (errorMessage) => {
+        // Ignored
       }
-    );
+    ).catch((err) => {
+      console.error(err);
+      setError("Could not start camera. Please ensure you have given camera permissions.");
+    });
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error);
+      if (html5QrCode.isScanning) {
+        html5QrCode.stop().catch(console.error);
       }
     };
   }, [onScan]);
@@ -45,7 +54,11 @@ export default function BarcodeScannerModal({ onScan, onClose }: BarcodeScannerM
         </div>
         
         <div className="p-4 flex-1">
-          <div id="reader" className="w-full h-full text-black bg-white rounded-lg overflow-hidden"></div>
+          {error ? (
+            <div className="text-red-500 text-center p-4">{error}</div>
+          ) : (
+            <div id="reader" className="w-full h-full text-black bg-white rounded-lg overflow-hidden"></div>
+          )}
           <p className="text-sm text-center text-[var(--color-muted)] mt-4">
             Point camera at product barcode
           </p>
