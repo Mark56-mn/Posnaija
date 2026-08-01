@@ -1,82 +1,79 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/pages/dashboard/SettingsPage.tsx', 'utf8');
 
-const importTarget = `import { Star, Zap, Crown, Check } from 'lucide-react';`;
-const importReplacement = `import { Star, Zap, Crown, Check, Fingerprint } from 'lucide-react';`;
+const importTarget = `import { Check, Star, Zap, Crown, Fingerprint } from 'lucide-react';`;
+const importReplacement = `import { Check, Star, Zap, Crown, Fingerprint, Printer, Moon, Sun } from 'lucide-react';`;
 if (code.includes(importTarget)) {
   code = code.replace(importTarget, importReplacement);
-} else {
-  code = code.replace(`import { Star, Zap, Crown, Check }`, `import { Star, Zap, Crown, Check, Fingerprint }`);
 }
 
-const businessProfileEnd = `          </div>
-        </CardContent>
-      </Card>`;
+const componentStartTarget = `export default function SettingsPage() {
+  const { session } = usePermissions();`;
+const componentStartReplacement = `export default function SettingsPage() {
+  const { session } = usePermissions();
+  const [lightTheme, setLightTheme] = useState(localStorage.getItem('lightTheme') === 'true');
+  const [autoPrint, setAutoPrint] = useState(localStorage.getItem('autoPrint') === 'true');
 
-const passkeySection = `          </div>
-        </CardContent>
-      </Card>
+  useEffect(() => {
+    if (lightTheme) {
+      document.body.classList.add('light-theme');
+      localStorage.setItem('lightTheme', 'true');
+    } else {
+      document.body.classList.remove('light-theme');
+      localStorage.removeItem('lightTheme');
+    }
+  }, [lightTheme]);
 
-      <Card>
+  useEffect(() => {
+    if (autoPrint) {
+      localStorage.setItem('autoPrint', 'true');
+    } else {
+      localStorage.removeItem('autoPrint');
+    }
+  }, [autoPrint]);
+`;
+code = code.replace(componentStartTarget, componentStartReplacement);
+
+const preferencesSection = `      <Card>
         <CardContent className="p-6 space-y-4">
           <div className="flex items-center space-x-2 border-b border-[var(--color-muted)]/10 pb-2">
-            <Fingerprint className="h-5 w-5 text-[var(--color-accent)]" />
-            <h2 className="text-xl font-semibold">Device Security (Offline Login)</h2>
+            <h2 className="text-xl font-semibold">Device Preferences</h2>
           </div>
-          <p className="text-sm text-[var(--color-muted)]">
-            Register this device to allow offline login using your device's built-in security (Face ID, Touch ID, Windows Hello, or Passkey). 
-            This enables secure access to your POS dashboard even without an internet connection.
-          </p>
-          <Button onClick={async () => {
-            try {
-              if (!window.PublicKeyCredential) {
-                alert("Your device does not support passkeys or biometric authentication.");
-                return;
-              }
-              const challenge = new Uint8Array(32);
-              window.crypto.getRandomValues(challenge);
-              const userId = new Uint8Array(16);
-              window.crypto.getRandomValues(userId);
-              
-              const cred = await navigator.credentials.create({
-                publicKey: {
-                  challenge: challenge,
-                  rp: { name: "PosNaija", id: window.location.hostname },
-                  user: {
-                    id: userId,
-                    name: session.email || 'admin@posnaija.com',
-                    displayName: session.name || 'Admin',
-                  },
-                  pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                  authenticatorSelection: {
-                    authenticatorAttachment: "platform",
-                    userVerification: "required",
-                  },
-                  timeout: 60000,
-                  attestation: "none",
-                }
-              });
-              
-              if (cred) {
-                await db.passkeys.put({
-                  id: cred.id,
-                  admin_id: session.admin_id,
-                  name: session.name,
-                  email: session.email || '',
-                  created_at: new Date().toISOString()
-                });
-                alert("Device security registered successfully! You can now use your device biometrics/passkey to log in while offline.");
-              }
-            } catch (err) {
-              console.error(err);
-              alert("Passkey registration failed: " + err.message);
-            }
-          }}>
-            Register Offline Access (Passkey)
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium flex items-center gap-2"><Sun className="w-4 h-4" /> / <Moon className="w-4 h-4" /> High-Contrast Light Mode</p>
+                <p className="text-sm text-[var(--color-muted)]">Toggle between dark theme and high-contrast light mode for better outdoor visibility.</p>
+              </div>
+              <button 
+                onClick={() => setLightTheme(!lightTheme)}
+                className={\`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none \${lightTheme ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-surface)] border border-[var(--color-muted)]/30'}\`}
+              >
+                <span className={\`inline-block h-4 w-4 transform rounded-full bg-white transition-transform \${lightTheme ? 'translate-x-6' : 'translate-x-1'}\`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between border-t border-[var(--color-muted)]/10 pt-4">
+              <div>
+                <p className="font-medium flex items-center gap-2"><Printer className="w-4 h-4" /> Auto-Print Receipt</p>
+                <p className="text-sm text-[var(--color-muted)]">Automatically trigger browser print dialog after successful payment.</p>
+              </div>
+              <button 
+                onClick={() => setAutoPrint(!autoPrint)}
+                className={\`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none \${autoPrint ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-surface)] border border-[var(--color-muted)]/30'}\`}
+              >
+                <span className={\`inline-block h-4 w-4 transform rounded-full bg-white transition-transform \${autoPrint ? 'translate-x-6' : 'translate-x-1'}\`} />
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+`;
+
+const insertAfterPasskeyTarget = `Offline Login (Passkey)
           </Button>
         </CardContent>
       </Card>`;
 
-code = code.replace(businessProfileEnd, passkeySection);
+code = code.replace(insertAfterPasskeyTarget, insertAfterPasskeyTarget + '\n\n' + preferencesSection);
 
 fs.writeFileSync('src/pages/dashboard/SettingsPage.tsx', code);

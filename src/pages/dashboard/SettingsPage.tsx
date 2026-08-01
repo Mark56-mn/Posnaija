@@ -7,12 +7,33 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { db } from '../../lib/db';
-import { Check, Star, Zap, Crown, Fingerprint } from 'lucide-react';
+import { Check, Star, Zap, Crown, Fingerprint, Printer, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { PaystackButton } from 'react-paystack';
 
 export default function SettingsPage() {
   const { session } = usePermissions();
+  const [lightTheme, setLightTheme] = useState(localStorage.getItem('lightTheme') === 'true');
+  const [autoPrint, setAutoPrint] = useState(localStorage.getItem('autoPrint') === 'true');
+
+  useEffect(() => {
+    if (lightTheme) {
+      document.body.classList.add('light-theme');
+      localStorage.setItem('lightTheme', 'true');
+    } else {
+      document.body.classList.remove('light-theme');
+      localStorage.removeItem('lightTheme');
+    }
+  }, [lightTheme]);
+
+  useEffect(() => {
+    if (autoPrint) {
+      localStorage.setItem('autoPrint', 'true');
+    } else {
+      localStorage.removeItem('autoPrint');
+    }
+  }, [autoPrint]);
+
   const [upgrading, setUpgrading] = useState(false);
   const [newBranchName, setNewBranchName] = useState('');
   const branches = useLiveQuery(() => db.branches.toArray());

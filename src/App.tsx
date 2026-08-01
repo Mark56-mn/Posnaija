@@ -32,7 +32,14 @@ import PublicLayout from './components/layout/PublicLayout';
 import AuditorLoginPage from './pages/auth/AuditorLoginPage';
 import AuditorDashboard from './pages/dashboard/AuditorDashboard';
 
+import { useEffect } from 'react';
+
 export default function App() {
+  useEffect(() => {
+    if (localStorage.getItem('lightTheme') === 'true') {
+      document.body.classList.add('light-theme');
+    }
+  }, []);
   return (
     <BrowserRouter>
       <Routes>

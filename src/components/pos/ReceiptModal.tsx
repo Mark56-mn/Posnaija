@@ -3,8 +3,15 @@ import { Button } from '../ui/Button';
 import { Printer, Share2, X } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { QRCodeSVG } from 'qrcode.react';
+import { useEffect } from 'react';
 
 export default function ReceiptModal({ sale, session, onClose }: any) {
+  useEffect(() => {
+    if (localStorage.getItem('autoPrint') === 'true' && sale) {
+      setTimeout(() => window.print(), 500);
+    }
+  }, [sale]);
+
   if (!sale) return null;
   
   const items = JSON.parse(sale.items);

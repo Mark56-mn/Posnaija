@@ -3,10 +3,15 @@ import { Link } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { WifiOff, Smartphone, Receipt, MessageSquare, Users, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import TutorialModal from '../../components/TutorialModal';
 
 export default function LandingPage() {
+  const [showTutorial, setShowTutorial] = useState(false);
+
   return (
     <div className="flex flex-col items-center">
+      {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
       {/* Hero Section */}
       <section className="w-full py-24 md:py-32 lg:py-40 text-center px-4">
         <div className="container mx-auto max-w-4xl space-y-8">
@@ -20,9 +25,7 @@ export default function LandingPage() {
             <Link to="/auth/register">
               <Button size="lg" className="w-full sm:w-auto">Start Free 14-Day Trial</Button>
             </Link>
-            <Link to="/#how-it-works">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto">See How It Works</Button>
-            </Link>
+            <Button variant="outline" size="lg" className="w-full sm:w-auto" onClick={() => setShowTutorial(true)}>See How It Works</Button>
           </div>
         </div>
       </section>

@@ -14,8 +14,17 @@ export default function BarcodeScannerModal({ onScan, onClose }: BarcodeScannerM
   useEffect(() => {
     const html5QrCode = new Html5Qrcode("reader");
     
-    html5QrCode.start(
-      { facingMode: "environment" },
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        // Prefer back camera if possible, otherwise just use the first one
+        let cameraId = devices[0].id;
+        const backCamera = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
+        if (backCamera) {
+          cameraId = backCamera.id;
+        }
+
+        html5QrCode.start(
+          cameraId,
       {
         fps: 10,
         qrbox: { width: 250, height: 250 }
@@ -31,9 +40,16 @@ export default function BarcodeScannerModal({ onScan, onClose }: BarcodeScannerM
       (errorMessage) => {
         // Ignored
       }
-    ).catch((err) => {
+        ).catch((err) => {
+          console.error(err);
+          setError("Could not start camera. Please ensure you have given camera permissions.");
+        });
+      } else {
+        setError("No cameras found on your device.");
+      }
+    }).catch(err => {
       console.error(err);
-      setError("Could not start camera. Please ensure you have given camera permissions.");
+      setError("Error accessing cameras: " + err.message);
     });
 
     return () => {

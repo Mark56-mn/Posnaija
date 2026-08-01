@@ -7,6 +7,9 @@ import { formatNaira, formatDateOnly } from '../../lib/utils';
 import { ShoppingCart, TrendingUp, Package, AlertTriangle, BarChart3, ReceiptText, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar } from 'recharts';
+import QuickSaleModal from '../../components/pos/QuickSaleModal';
+import ReceiptModal from '../../components/pos/ReceiptModal';
+import { Zap } from 'lucide-react';
 
 export default function DashboardHome() {
   const { session } = usePermissions();
@@ -20,6 +23,8 @@ export default function DashboardHome() {
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [expiringProducts, setExpiringProducts] = useState<any[]>([]);
+  const [showQuickSale, setShowQuickSale] = useState(false);
+  const [completedSale, setCompletedSale] = useState<any>(null);
 
   useEffect(() => {
     async function loadStats() {
@@ -171,9 +176,12 @@ export default function DashboardHome() {
           <CardContent className="space-y-4">
             <Link to="/dashboard/new-sale" className="block">
               <Button size="lg" className="w-full justify-start text-lg h-14">
-                <ShoppingCart className="mr-3 h-5 w-5" /> New Sale
+                <ShoppingCart className="mr-3 h-5 w-5" /> Full POS
               </Button>
             </Link>
+            <Button size="lg" className="w-full justify-start text-lg h-14 bg-[var(--color-accent)] text-[var(--color-primary)] hover:bg-[var(--color-accent)]/90" onClick={() => setShowQuickSale(true)}>
+              <Zap className="mr-3 h-5 w-5" /> Quick Sale
+            </Button>
             <Link to="/dashboard/products" className="block">
               <Button variant="outline" size="lg" className="w-full justify-start h-14 border-[var(--color-muted)]/20 text-[var(--color-text)] hover:text-[var(--color-primary)]">
                 <Package className="mr-3 h-5 w-5" /> Add Product
@@ -282,6 +290,27 @@ export default function DashboardHome() {
           </CardContent>
         </Card>
       </div>
+
+      {showQuickSale && (
+        <QuickSaleModal 
+          session={session} 
+          onClose={() => setShowQuickSale(false)} 
+          onSaleComplete={(sale) => {
+            setShowQuickSale(false);
+            setCompletedSale(sale);
+            // reload stats
+            // Stats will update on next visit
+          }} 
+        />
+      )}
+      
+      {completedSale && (
+        <ReceiptModal 
+          sale={completedSale} 
+          session={session} 
+          onClose={() => setCompletedSale(null)} 
+        />
+      )}
     </div>
   );
 }
