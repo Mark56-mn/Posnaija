@@ -7,7 +7,7 @@ import {
   Settings, LogOut, UserCircle2, Menu, X, WifiOff
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { db } from '../../lib/db';
 
@@ -70,15 +70,30 @@ export default function DashboardLayout() {
   const hasBasicPlan = session.plan !== 'free';
   const hasProPlan = session.plan === 'pro' || session.plan === 'lifetime';
 
+  const themeStyle = hasProPlan ? {
+    ...(session.custom_theme_primary ? { '--color-primary': session.custom_theme_primary } : {}),
+    ...(session.custom_theme_accent ? { '--color-accent': session.custom_theme_accent } : {}),
+    ...(session.custom_theme_background ? { '--color-background': session.custom_theme_background } : {}),
+    ...(session.custom_theme_surface ? { '--color-surface': session.custom_theme_surface } : {}),
+  } as React.CSSProperties : undefined;
+
+  const brandName = (hasProPlan && session.custom_theme_brand_name) 
+    ? <span className="font-bold text-xl">{session.custom_theme_brand_name}</span>
+    : <span className="font-normal text-xl">Pos<span className="font-bold text-[var(--color-accent)]">Naija</span></span>;
+    
+  const desktopBrandName = (hasProPlan && session.custom_theme_brand_name) 
+    ? <span className="font-bold text-2xl">{session.custom_theme_brand_name}</span>
+    : <span className="font-normal text-2xl">Pos<span className="font-bold text-[var(--color-accent)]">Naija</span></span>;
+
   return (
-    <div className="min-h-screen bg-[var(--color-background)] flex flex-col text-[var(--color-text)]">
+    <div className="min-h-screen bg-[var(--color-background)] flex flex-col text-[var(--color-text)]" style={themeStyle}>
       <PWAInstallPrompt />
       <div className="flex-1 flex flex-col md:flex-row relative">
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-[var(--color-muted)]/20 bg-[var(--color-surface)] z-20">
         <div className="flex items-center space-x-2">
           <Store className="h-6 w-6 text-[var(--color-accent)]" />
-          <span className="font-normal text-xl">Pos<span className="font-bold text-[var(--color-accent)]">Naija</span></span>
+          {brandName}
         </div>
         <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 -mr-2 text-[var(--color-text)]">
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -93,7 +108,7 @@ export default function DashboardLayout() {
       `}>
         <div className="p-6 hidden md:flex items-center space-x-2 border-b border-[var(--color-muted)]/10">
           <Store className="h-7 w-7 text-[var(--color-accent)]" />
-          <span className="font-normal text-2xl">Pos<span className="font-bold text-[var(--color-accent)]">Naija</span></span>
+          {desktopBrandName}
         </div>
 
         <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">

@@ -20,6 +20,11 @@ export interface Session {
   plan: 'free' | 'basic' | 'pro' | 'lifetime';
   created_at?: string;
   offline_pin?: string;
+  custom_theme_primary?: string;
+  custom_theme_accent?: string;
+  custom_theme_background?: string;
+  custom_theme_surface?: string;
+  custom_theme_brand_name?: string;
 }
 
 export interface LocalProduct {
