@@ -70,6 +70,7 @@ export interface LocalCustomer {
   phone?: string;
   whatsapp?: string;
   total_debt: number;
+  points?: number;
   created_at: string;
   synced: boolean;
 }

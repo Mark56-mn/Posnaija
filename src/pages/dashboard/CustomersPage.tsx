@@ -35,6 +35,7 @@ export default function CustomersPage() {
       admin_id: session.admin_id,
       ...formData,
       total_debt: 0,
+      points: 0,
       created_at: new Date().toISOString(),
       synced: false
     };
@@ -81,6 +82,7 @@ export default function CustomersPage() {
                 <th className="p-4 font-medium">Name</th>
                 <th className="p-4 font-medium">Phone</th>
                 <th className="p-4 font-medium">WhatsApp</th>
+                <th className="p-4 font-medium">Loyalty Points</th>
                 <th className="p-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -90,6 +92,7 @@ export default function CustomersPage() {
                   <td className="p-4 font-medium">{c.name}</td>
                   <td className="p-4 text-[var(--color-muted)]">{c.phone || '—'}</td>
                   <td className="p-4 text-[var(--color-muted)]">{c.whatsapp || '—'}</td>
+                  <td className="p-4 font-medium text-[var(--color-accent)]">{c.points || 0} pts</td>
                   <td className="p-4 text-right">
                     {c.whatsapp && (
                       <Button variant="ghost" size="sm" className="text-[var(--color-success)] hover:text-[var(--color-success)] hover:bg-[var(--color-success)]/10 mr-2">
@@ -110,7 +113,7 @@ export default function CustomersPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-[var(--color-muted)]">No customers found.</td>
+                  <td colSpan={5} className="p-8 text-center text-[var(--color-muted)]">No customers found.</td>
                 </tr>
               )}
             </tbody>

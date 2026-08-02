@@ -13,7 +13,7 @@ interface CartItem {
 interface CartState {
   items: CartItem[];
   discountValue: number;
-  discountType: 'percentage' | 'flat';
+  discountType: 'percentage' | 'flat' | 'points';
   taxRate: number;
   customerName: string;
   customerId: string;
@@ -28,7 +28,7 @@ interface CartStore extends CartState {
   addItem: (product: any) => void;
   removeItem: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
-  setDiscount: (val: number, type: 'percentage' | 'flat') => void;
+  setDiscount: (val: number, type: 'percentage' | 'flat' | 'points') => void;
   setTaxRate: (rate: number) => void;
   setCustomerName: (n: string) => void;
   setCustomerId: (id: string) => void;
@@ -140,6 +140,10 @@ export const useCartStore = create<CartStore>((set, get) => ({
     const val = get().discountValue;
     if (type === 'percentage') {
       return sub * (val / 100);
+    }
+    // For 'points', we assume 1 point = 1 Naira discount (or whatever conversion)
+    if (type === 'points') {
+      return val;
     }
     return val;
   },
