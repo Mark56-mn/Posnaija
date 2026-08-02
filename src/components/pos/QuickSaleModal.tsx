@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, ShoppingBag } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -11,6 +11,10 @@ export default function QuickSaleModal({ session, onClose, onSaleComplete }: any
   const [matchedProduct, setMatchedProduct] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
   const [processing, setProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cash'|'transfer'|'pos'|'split'>('cash');
+  const [splitCash, setSplitCash] = useState(0);
+  const [splitTransfer, setSplitTransfer] = useState(0);
+  const [splitPos, setSplitPos] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function QuickSaleModal({ session, onClose, onSaleComplete }: any
     return () => clearTimeout(timer);
   }, [search]);
 
-  const handleCheckout = async (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!matchedProduct || quantity <= 0) return;
     
@@ -61,7 +65,12 @@ export default function QuickSaleModal({ session, onClose, onSaleComplete }: any
         discount: 0,
         tax_amount: 0,
         total: matchedProduct.selling_price * quantity,
-        payment_method: 'cash',
+        payment_method: paymentMethod,
+        split_payments: paymentMethod === 'split' ? JSON.stringify([
+          ...(splitCash > 0 ? [{ method: 'cash', amount: splitCash }] : []),
+          ...(splitTransfer > 0 ? [{ method: 'transfer', amount: splitTransfer }] : []),
+          ...(splitPos > 0 ? [{ method: 'pos', amount: splitPos }] : [])
+        ]) : null,
         payment_status: 'paid',
         amount_paid: matchedProduct.selling_price * quantity,
         debt_amount: 0,
@@ -154,12 +163,48 @@ export default function QuickSaleModal({ session, onClose, onSaleComplete }: any
               )
             )}
 
+
+            {matchedProduct && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-[var(--color-muted)] mb-2 block">Payment Method</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['cash', 'transfer', 'pos', 'split'].map(method => (
+                      <button key={method} type="button" onClick={() => setPaymentMethod(method as any)} className={`py-2 rounded-lg border capitalize ${paymentMethod === method ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'border-[var(--color-muted)]/30 text-[var(--color-muted)] hover:border-[var(--color-muted)]'}`}>
+                        {method}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {paymentMethod === 'split' && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div>
+                      <label className="text-xs text-[var(--color-muted)] mb-1 block">Cash</label>
+                      <Input type="number" min="0" value={splitCash || ''} onChange={e => setSplitCash(Number(e.target.value))} className="h-9" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-[var(--color-muted)] mb-1 block">Transfer</label>
+                      <Input type="number" min="0" value={splitTransfer || ''} onChange={e => setSplitTransfer(Number(e.target.value))} className="h-9" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-[var(--color-muted)] mb-1 block">POS</label>
+                      <Input type="number" min="0" value={splitPos || ''} onChange={e => setSplitPos(Number(e.target.value))} className="h-9" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <Button 
               type="submit" 
               className="w-full h-12 text-lg" 
-              disabled={!matchedProduct || quantity <= 0 || quantity > matchedProduct.quantity || processing}
+              disabled={
+                !matchedProduct || quantity <= 0 || quantity > matchedProduct.quantity || processing ||
+                (paymentMethod === 'split' && (splitCash + splitTransfer + splitPos !== matchedProduct.selling_price * quantity))
+              }
             >
-              {processing ? 'Processing...' : 'Complete Sale (Cash)'}
+              {processing ? 'Processing...' : `Complete Sale (${paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)})`}
             </Button>
           </form>
         </div>

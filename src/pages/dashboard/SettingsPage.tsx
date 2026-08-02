@@ -9,10 +9,12 @@ import { Button } from '../../components/ui/Button';
 import { db } from '../../lib/db';
 import { Check, Star, Zap, Crown, Fingerprint, Printer, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
+import { syncUp, syncDown } from '../../lib/sync';
+import { RefreshCw } from 'lucide-react';
 import { PaystackButton } from 'react-paystack';
 
 export default function SettingsPage() {
-  const { session } = usePermissions();
+  const { session, isAdmin, isManager } = usePermissions();
   const [lightTheme, setLightTheme] = useState(localStorage.getItem('lightTheme') === 'true');
   const [autoPrint, setAutoPrint] = useState(localStorage.getItem('autoPrint') === 'true');
 
@@ -35,6 +37,7 @@ export default function SettingsPage() {
   }, [autoPrint]);
 
   const [upgrading, setUpgrading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [newBranchName, setNewBranchName] = useState('');
   
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
@@ -55,6 +58,25 @@ export default function SettingsPage() {
       });
     }
   }, [session]);
+
+  
+  const handleManualSync = async () => {
+    if (!navigator.onLine) {
+      alert("You are currently offline. Please connect to the internet to sync.");
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      await syncUp();
+      await syncDown(session.admin_id);
+      alert("Data synchronized successfully!");
+    } catch (error: any) {
+      console.error(error);
+      alert("Sync failed: " + error.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleSaveBusiness = async () => {
     try {

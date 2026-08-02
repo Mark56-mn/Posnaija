@@ -10,7 +10,7 @@ interface CartItem {
   unit: string;
 }
 
-interface CartStore {
+interface CartState {
   items: CartItem[];
   discountValue: number;
   discountType: 'percentage' | 'flat';
@@ -20,6 +20,11 @@ interface CartStore {
   paymentMethod: string;
   amountPaid: number;
   splitPayments: { method: string; amount: number }[];
+}
+
+interface CartStore extends CartState {
+  activeTable: number;
+  setActiveTable: (tableId: number) => Promise<void>;
   addItem: (product: any) => void;
   removeItem: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
@@ -39,7 +44,7 @@ interface CartStore {
   debtAmount: () => number;
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
+const initialState: CartState = {
   items: [],
   discountValue: 0,
   discountType: 'flat',
@@ -49,6 +54,42 @@ export const useCartStore = create<CartStore>((set, get) => ({
   paymentMethod: 'cash',
   amountPaid: 0,
   splitPayments: [],
+};
+
+export const useCartStore = create<CartStore>((set, get) => ({
+  ...initialState,
+  activeTable: 1,
+  
+  setActiveTable: async (tableId: number) => {
+    if (get().activeTable === tableId) return;
+    
+    // Save current table
+    await saveDraft(get());
+    
+    // Load new table
+    try {
+      const draft = await db.draft_orders.get(`table_${tableId}`);
+      if (draft && draft.items) {
+        const parsed = JSON.parse(draft.items);
+        set({
+          activeTable: tableId,
+          items: parsed.items || [],
+          discountValue: parsed.discountValue || 0,
+          discountType: parsed.discountType || 'flat',
+          taxRate: parsed.taxRate || 0,
+          customerName: parsed.customerName || '',
+          customerId: parsed.customerId || '',
+          paymentMethod: parsed.paymentMethod || 'cash',
+          amountPaid: parsed.amountPaid || 0,
+          splitPayments: parsed.splitPayments || [],
+        });
+      } else {
+        set({ ...initialState, activeTable: tableId });
+      }
+    } catch (e) {
+      set({ ...initialState, activeTable: tableId });
+    }
+  },
 
   addItem: (product) => {
     const existing = get().items.find(i => i.id === product.id);
@@ -65,14 +106,12 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }
     saveDraft(get());
   },
-
   removeItem: (id) => {
     set(state => ({
       items: state.items.filter(i => i.id !== id),
     }));
     saveDraft(get());
   },
-
   updateQty: (id, qty) => {
     if (qty <= 0) {
       get().removeItem(id);
@@ -83,30 +122,17 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }));
     saveDraft(get());
   },
-
-  setDiscount: (val, type) => set({ discountValue: val, discountType: type }),
-  setTaxRate: (rate) => set({ taxRate: rate }),
-  setCustomerName: (n) => set({ customerName: n }),
-  setCustomerId: (id) => set({ customerId: id }),
-  setPaymentMethod: (m) => set({ paymentMethod: m }),
-  setAmountPaid: (a) => set({ amountPaid: a }),
-  setSplitPayments: (splits) => set({ splitPayments: splits }),
-
+  setDiscount: (val, type) => { set({ discountValue: val, discountType: type }); saveDraft(get()); },
+  setTaxRate: (rate) => { set({ taxRate: rate }); saveDraft(get()); },
+  setCustomerName: (n) => { set({ customerName: n }); saveDraft(get()); },
+  setCustomerId: (id) => { set({ customerId: id }); saveDraft(get()); },
+  setPaymentMethod: (m) => { set({ paymentMethod: m }); saveDraft(get()); },
+  setAmountPaid: (a) => { set({ amountPaid: a }); saveDraft(get()); },
+  setSplitPayments: (splits) => { set({ splitPayments: splits }); saveDraft(get()); },
   clearCart: () => {
-    set({
-      items: [],
-      discountValue: 0,
-      discountType: 'flat',
-      taxRate: 0,
-      customerName: '',
-      customerId: '',
-      paymentMethod: 'cash',
-      amountPaid: 0,
-      splitPayments: [],
-    });
-    db.draft_orders.delete('current');
+    set(initialState);
+    db.draft_orders.delete(`table_${get().activeTable}`);
   },
-
   subtotal: () => get().items.reduce((sum, i) => sum + i.selling_price * i.quantity, 0),
   discountAmount: () => {
     const sub = get().subtotal();
@@ -135,10 +161,23 @@ export const useCartStore = create<CartStore>((set, get) => ({
 async function saveDraft(state: any) {
   const session = await db.session.get(1);
   if (!session) return;
+  
+  const stateToSave = {
+    items: state.items,
+    discountValue: state.discountValue,
+    discountType: state.discountType,
+    taxRate: state.taxRate,
+    customerName: state.customerName,
+    customerId: state.customerId,
+    paymentMethod: state.paymentMethod,
+    amountPaid: state.amountPaid,
+    splitPayments: state.splitPayments,
+  };
+  
   await db.draft_orders.put({
-    id: 'current',
+    id: `table_${state.activeTable}`,
     admin_id: session.admin_id,
-    items: JSON.stringify(state.items),
+    items: JSON.stringify(stateToSave),
     total: state.total(),
     updated_at: new Date().toISOString(),
   });

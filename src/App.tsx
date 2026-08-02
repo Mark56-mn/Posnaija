@@ -33,6 +33,7 @@ import AuditorLoginPage from './pages/auth/AuditorLoginPage';
 import AuditorDashboard from './pages/dashboard/AuditorDashboard';
 
 import { useEffect } from 'react';
+import InstallPrompt from './components/InstallPrompt';
 
 export default function App() {
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function App() {
   }, []);
   return (
     <BrowserRouter>
+      <InstallPrompt />
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />
